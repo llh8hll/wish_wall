@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>2026愿望墙</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel: rgba(255,255,255,.08);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+    }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", Arial;
+      background: radial-gradient(1200px 800px at 10% 10%, #1a2a6c55, transparent 60%),
+                  radial-gradient(1000px 700px at 90% 20%, #b21f1f44, transparent 55%),
+                  radial-gradient(1100px 800px at 50% 90%, #fdbb2d33, transparent 60%),
+                  var(--bg);
+      color: var(--text);
+    }
+    .wrap{ max-width: 1100px; margin: 0 auto; padding: 22px 16px 60px; }
+    header{
+      display:flex; gap:14px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+      margin-bottom: 14px;
+    }
+    .title{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    h1{ margin:0; font-size: 24px; letter-spacing:.5px; }
+    .sub{ color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    .panel{
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .form{
+      padding: 14px;
+      display:grid;
+      grid-template-columns: 1fr 170px 130px;
+      gap: 10px;
+      align-items: start;
+    }
+    .form textarea{
+      width: 100%;
+      min-height: 74px;
+      resize: vertical;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .form input, .form select{
+      width: 100%;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      padding: 0 10px;
+      outline: none;
+      font-size: 14px;
+    }
+    .row{
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .btn{
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.12);
+      color: var(--text);
+      cursor:pointer;
+      font-weight: 600;
+      letter-spacing:.3px;
+    }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .hint{ padding: 0 14px 14px; color: var(--muted); font-size: 12px; }
+    .bar{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      margin: 16px 0 10px;
+    }
+    .bar .count{ color: var(--muted); font-size: 12px; }
+    .bar .mini{
+      display:flex; gap:10px; align-items:center;
+    }
+    .mini button{
+      height: 34px; padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      cursor:pointer;
+      font-size: 13px;
+    }
+
+    /* 瀑布流（简单版：CSS columns） */
+    .notes{
+      column-count: 4;
+      column-gap: 14px;
+    }
+    @media (max-width: 980px){ .form{ grid-template-columns: 1fr 160px 120px; } .notes{ column-count: 3; } }
+    @media (max-width: 720px){ .form{ grid-template-columns: 1fr; } .notes{ column-count: 2; } }
+    @media (max-width: 420px){ .notes{ column-count: 1; } }
+
+    .note{
+      display:inline-block;
+      width: 100%;
+      break-inside: avoid;
+      margin: 0 0 14px;
+      border-radius: 14px;
+      padding: 14px 14px 16px;
+      box-shadow: 0 14px 28px rgba(0,0,0,.22);
+      position: relative;
+      transform: rotate(var(--r));
+      transition: transform .15s ease, box-shadow .15s ease;
+      border: 1px solid rgba(0,0,0,.08);
+      color: rgba(0,0,0,.86);
+    }
+    .note:hover{ transform: rotate(var(--r)) scale(1.02); box-shadow: 0 18px 36px rgba(0,0,0,.28); }
+
+    .tape{
+      position:absolute;
+      top:-10px; left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      width: 74px; height: 20px;
+      background: rgba(255,255,255,.55);
+      border-radius: 7px;
+      box-shadow: 0 10px 20px rgba(0,0,0,.12);
+      filter: blur(.1px);
+    }
+
+    .content{ white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.55; }
+    .meta{ margin-top: 10px; display:flex; justify-content:space-between; gap:10px; font-size: 12px; opacity:.7; }
+
+    .yellow{ background: #fff7a8; }
+    .pink{ background: #ffd1dc; }
+    .blue{ background: #cde9ff; }
+    .green{ background: #d2ffd9; }
+    .purple{ background: #e6d7ff; }
+
+    .toast{
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      background: rgba(0,0,0,.65);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      border: 1px solid rgba(255,255,255,.18);
+      display:none;
+      max-width: calc(100vw - 24px);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>🧧 2026愿望墙</h1>
+        <div class="sub">写下你的新年愿望，贴到墙上。所有人都能看到。</div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="form">
+        <div class="row">
+          <textarea id="content" maxlength="200" placeholder="写下你的新年愿望…"></textarea>
+          <div class="sub" id="counter">0 / 200</div>
+        </div>
+
+        <div class="row">
+          <input id="nickname" maxlength="20" placeholder="昵称（可不填）" />
+          <select id="color">
+            <option value="yellow">黄色便签</option>
+            <option value="pink">粉色便签</option>
+            <option value="blue">蓝色便签</option>
+            <option value="green">绿色便签</option>
+            <option value="purple">紫色便签</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <button class="btn" id="submit">贴到墙上</button>
+          <button class="btn" id="random" type="button">换个随机颜色</button>
+        </div>
+      </div>
+      <div class="hint">提示：提交后所有人可见。</div>
+    </section>
+
+    <div class="bar">
+      <div class="count" id="count">加载中…</div>
+      <div class="mini">
+        <button id="refresh">刷新</button>
+        <button id="shuffle">随机排序</button>
+      </div>
+    </div>
+
+    <section class="notes" id="notes"></section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    // 1) 这里
+    const SUPABASE_URL = "https://xzyuicnemobmxwzvgvmx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_3wHCgrg8y_5qafV8dbyYPA_uihs8L1T";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const $ = (id) => document.getElementById(id);
+
+    const elNotes = $("notes");
+    const elContent = $("content");
+    const elNickname = $("nickname");
+    const elColor = $("color");
+    const elSubmit = $("submit");
+    const elCounter = $("counter");
+    const elCount = $("count");
+    const elToast = $("toast");
+
+    const COLORS = ["yellow","pink","blue","green","purple"];
+    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+    function toast(msg){
+      elToast.textContent = msg;
+      elToast.style.display = "block";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => elToast.style.display = "none", 2200);
+    }
+
+    function fmtTime(iso){
+      try{
+        const d = new Date(iso);
+        return d.toLocaleString("zh-CN", { hour12:false });
+      }catch{ return ""; }
+    }
+
+    function safeText(s){
+      // 防 XSS：只当纯文本展示
+      return (s ?? "").toString();
+    }
+
+    function noteHTML(row){
+      const r = clamp(row.rotation ?? 0, -6, 6);
+      const color = COLORS.includes(row.color) ? row.color : "yellow";
+
+      const wrap = document.createElement("div");
+      wrap.className = `note ${color}`;
+      wrap.style.setProperty("--r", `${r}deg`);
+
+      const tape = document.createElement("div");
+      tape.className = "tape";
+
+      const content = document.createElement("div");
+      content.className = "content";
+      content.textContent = safeText(row.content);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const left = document.createElement("div");
+      left.textContent = safeText(row.nickname || "匿名");
+
+      const right = document.createElement("div");
+      right.textContent = fmtTime(row.created_at);
+
+      meta.appendChild(left);
+      meta.appendChild(right);
+
+      wrap.appendChild(tape);
+      wrap.appendChild(content);
+      wrap.appendChild(meta);
+
+      return wrap;
+    }
+
+    let cache = [];
+    function render(list){
+      elNotes.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      list.forEach(row => frag.appendChild(noteHTML(row)));
+      elNotes.appendChild(frag);
+      elCount.textContent = `当前共有 ${list.length} 条愿望`;
+    }
+
+    async function load(){
+      elCount.textContent = "加载中…";
+      const { data, error } = await supabase
+        .from("wishes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+
+      if(error){
+        console.error(error);
+        elCount.textContent = "加载失败（请检查 Supabase 配置/策略）";
+        toast("加载失败：请检查配置");
+        return;
+      }
+      cache = data ?? [];
+      render(cache);
+    }
+
+    function randomColor(){
+      const c = COLORS[Math.floor(Math.random()*COLORS.length)];
+      elColor.value = c;
+    }
+
+    // 简单防刷：本地冷却（不是强安全，但够“最简单链接分享”用）
+    function canPost(){
+      const t = Number(localStorage.getItem("wish_last_post") || "0");
+      return Date.now() - t > 15000; // 15 秒一次
+    }
+    function markPosted(){
+      localStorage.setItem("wish_last_post", String(Date.now()));
+    }
+
+    async function submit(){
+      const content = elContent.value.trim();
+      const nickname = elNickname.value.trim();
+      const color = elColor.value;
+
+      if(!content){
+        toast("愿望不能为空～");
+        return;
+      }
+      if(content.length > 200){
+        toast("愿望太长了（最多 200 字）");
+        return;
+      }
+      if(nickname.length > 20){
+        toast("昵称太长了（最多 20 字）");
+        return;
+      }
+      if(!canPost()){
+        toast("先歇一歇～稍后再贴");
+        return;
+      }
+
+      elSubmit.disabled = true;
+
+      // 旋转角度存库，保证每次看到都一致
+      const rotation = Math.floor(Math.random() * 11) - 5; // -5..5
+
+      const { data, error } = await supabase
+        .from("wishes")
+        .insert([{ nickname: nickname || null, content, color, rotation }])
+        .select()
+        .single();
+
+      elSubmit.disabled = false;
+
+      if(error){
+        console.error(error);
+        toast("提交失败：请稍后再试");
+        return;
+      }
+
+      markPosted();
+      elContent.value = "";
+      elCounter.textContent = "0 / 200";
+      toast("已贴到墙上啦 🧧");
+
+      // 乐观更新：直接插到最前面
+      cache = [data, ...cache].slice(0, 200);
+      render(cache);
+    }
+
+    // 计数器
+    elContent.addEventListener("input", () => {
+      elCounter.textContent = `${elContent.value.length} / 200`;
+    });
+
+    $("random").addEventListener("click", randomColor);
+    $("refresh").addEventListener("click", load);
+    $("shuffle").addEventListener("click", () => {
+      const shuffled = [...cache].sort(() => Math.random() - 0.5);
+      render(shuffled);
+    });
+    elSubmit.addEventListener("click", submit);
+
+    // 可选：实时刷新（别人提交后你这里自动出现）
+    // 需要 Supabase Dashboard 开启 Realtime（默认多数项目可用）
+    supabase
+      .channel("wishes-inserts")
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "wishes" },
+        (payload) => {
+          const row = payload.new;
+          // 避免重复：如果刚好是自己插入，也可能触发
+          if(cache.some(x => x.id === row.id)) return;
+          cache = [row, ...cache].slice(0, 200);
+          render(cache);
+          toast("有新的愿望贴上来了 ✨");
+        }
+      )
+      .subscribe();
+
+    randomColor();
+    await load();
+  </script>
+</body>
+</html>
